@@ -33,7 +33,7 @@
       font-weight: 600;
       margin-bottom: 0.5rem;
     }
-    input[type="text"], input[type="date"], select {
+    input[type="text"], input[type="date"], input[type="email"], select {
       width: 100%;
       padding: 0.6rem;
       border: 1px solid #ccc;
@@ -94,6 +94,10 @@
         <input type="text" id="title" name="title" required />
       </div>
       <div class="form-group">
+        <label for="email">Email Address *</label>
+        <input type="email" id="email" name="email" required />
+      </div>
+      <div class="form-group">
         <label for="date">Date *</label>
         <input type="date" id="date" name="date" required />
       </div>
@@ -129,26 +133,19 @@
         return;
       }
 
-      const timestamp = new Date().toISOString();
-      let ipAddress = 'unknown';
-
-      try {
-        const ipResponse = await fetch('https://api.ipify.org?format=json');
-        const ipData = await ipResponse.json();
-        ipAddress = ipData.ip;
-      } catch (err) {
-        console.warn('Could not retrieve IP address.', err);
-      }
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
 
       const payload = {
         contractType: document.getElementById('contractType').value,
         customerName: document.getElementById('customerName').value.trim(),
         contactName: document.getElementById('contactName').value.trim(),
         title: document.getElementById('title').value.trim(),
+        email: document.getElementById('email').value.trim(),
         date: document.getElementById('date').value,
         signature: signaturePad.toDataURL(),
-        timestamp: timestamp,
-        ipAddress: ipAddress
+        timestamp: new Date().toISOString(),
+        ipAddress: ipData.ip
       };
 
       try {
