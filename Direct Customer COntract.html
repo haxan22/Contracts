@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contract Signature Form</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f2f5;
+      padding: 2rem;
+    }
+    .form-container {
+      max-width: 650px;
+      margin: auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 1.5rem;
+    }
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    input[type="text"], input[type="date"], select {
+      width: 100%;
+      padding: 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    .signature-pad {
+      border: 2px dashed #aaa;
+      border-radius: 12px;
+      height: 180px;
+      width: 100%;
+    }
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1rem;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .submit-btn {
+      background-color: #2563eb;
+      color: #fff;
+    }
+    .clear-btn {
+      background-color: #ef4444;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Contract Signature Form</h2>
+    <form id="signatureForm">
+      <div class="form-group">
+        <label for="contractType">Select Contract *</label>
+        <select id="contractType" name="contractType" required>
+          <option value="">-- Please choose --</option>
+          <option value="Direct Customer Terms">Direct Customer Terms</option>
+          <option value="Supplier Services Agreement">Supplier Services Agreement</option>
+          <option value="Vendor Market Place Agreement">Vendor Market Place Agreement</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="customerName">Customer Name *</label>
+        <input type="text" id="customerName" name="customerName" required />
+      </div>
+      <div class="form-group">
+        <label for="contactName">Contact Name *</label>
+        <input type="text" id="contactName" name="contactName" required />
+      </div>
+      <div class="form-group">
+        <label for="title">Title *</label>
+        <input type="text" id="title" name="title" required />
+      </div>
+      <div class="form-group">
+        <label for="date">Date *</label>
+        <input type="date" id="date" name="date" required />
+      </div>
+      <div class="form-group">
+        <label>Signature *</label>
+        <canvas id="signatureCanvas" class="signature-pad"></canvas>
+        <div class="button-group">
+          <button type="button" class="clear-btn" onclick="clearSignature()">Clear</button>
+        </div>
+      </div>
+      <div class="button-group" style="justify-content: flex-end;">
+        <button type="submit" class="submit-btn">Submit</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('signatureCanvas');
+    const signaturePad = new SignaturePad(canvas);
+
+    function clearSignature() {
+      signaturePad.clear();
+    }
+
+    function isSignatureEmpty() {
+      return signaturePad.isEmpty();
+    }
+
+    document.getElementById('signatureForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      if (isSignatureEmpty()) {
+        alert('Please provide a signature.');
+        return;
+      }
+
+      const timestamp = new Date().toISOString();
+      let ipAddress = 'unknown';
+
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        ipAddress = ipData.ip;
+      } catch (err) {
+        console.warn('Could not retrieve IP address.', err);
+      }
+
+      const payload = {
+        contractType: document.getElementById('contractType').value,
+        customerName: document.getElementById('customerName').value.trim(),
+        contactName: document.getElementById('contactName').value.trim(),
+        title: document.getElementById('title').value.trim(),
+        date: document.getElementById('date').value,
+        signature: signaturePad.toDataURL(),
+        timestamp: timestamp,
+        ipAddress: ipAddress
+      };
+
+      try {
+        const res = await fetch('https://42b858c747f4e3019eb6a3527fd871.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/74bef536430e413c953d8e7bbe6108d0/triggers/manual/paths/invoke/?api-version=1&tenantId=tId&environmentName=42b858c7-47f4-e301-9eb6-a3527fd87158&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sPr1wWfQkacjh8Wo9m1_7GJbMt9iCIvCXHgowvwueck', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          alert('Form submitted successfully!');
+          this.reset();
+          clearSignature();
+        } else {
+          alert('Submission failed.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred.');
+      }
+    });
+  </script>
+</body>
+</html>
