@@ -1,172 +1,304 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contract Signature Form</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Invoice Generator</title>
   <style>
     body {
-      font-family: 'Inter', sans-serif;
-      background: #f0f2f5;
-      padding: 2rem;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 30px;
     }
-    .form-container {
-      max-width: 650px;
+
+    .container {
+      max-width: 900px;
       margin: auto;
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-      padding: 2rem;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
+
     h2 {
       text-align: center;
       color: #333;
-      margin-bottom: 1.5rem;
     }
-    .form-group {
-      margin-bottom: 1.2rem;
-    }
+
     label {
-      display: block;
       font-weight: 600;
-      margin-bottom: 0.5rem;
+      display: block;
+      margin-top: 15px;
     }
-    input[type="text"], input[type="date"], input[type="email"], select {
+
+    select, input[type="text"], input[type="number"], input[type="date"], textarea {
       width: 100%;
-      padding: 0.6rem;
+      padding: 10px;
       border: 1px solid #ccc;
       border-radius: 8px;
-      box-sizing: border-box;
+      margin-top: 5px;
     }
-    .signature-pad {
-      border: 2px dashed #aaa;
-      border-radius: 12px;
-      height: 180px;
+
+    .line-items {
+      margin-top: 20px;
+    }
+
+    table {
       width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
     }
-    .button-group {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 1rem;
+
+    table, th, td {
+      border: 1px solid #ccc;
     }
-    button {
-      padding: 0.6rem 1.2rem;
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+
+    .btn {
+      margin-top: 20px;
+      background-color: #0078d7;
+      color: white;
       border: none;
-      border-radius: 6px;
-      font-weight: 600;
+      padding: 12px 18px;
+      border-radius: 8px;
       cursor: pointer;
     }
-    .submit-btn {
-      background-color: #2563eb;
-      color: #fff;
+
+    .btn:hover {
+      background-color: #005ea8;
     }
-    .clear-btn {
-      background-color: #ef4444;
-      color: #fff;
+
+    #loading {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: #0078d7;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    #successMsg {
+      text-align: center;
+      font-weight: bold;
+      color: green;
+      margin-top: 20px;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <div class="form-container">
-    <h2>Contract Signature Form</h2>
-    <form id="signatureForm">
-      <div class="form-group">
-        <label for="contractType">Select Contract *</label>
-        <select id="contractType" name="contractType" required>
-          <option value="">-- Please choose --</option>
-          <option value="Direct Customer Terms">Direct Customer Terms</option>
-          <option value="Supplier Services Agreement">Supplier Services Agreement</option>
-          <option value="Vendor Market Place Agreement">Vendor Market Place Agreement</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="customerName">Customer Name *</label>
-        <input type="text" id="customerName" name="customerName" required />
-      </div>
-      <div class="form-group">
-        <label for="contactName">Contact Name *</label>
-        <input type="text" id="contactName" name="contactName" required />
-      </div>
-      <div class="form-group">
-        <label for="title">Title *</label>
-        <input type="text" id="title" name="title" required />
-      </div>
-      <div class="form-group">
-        <label for="email">Email Address *</label>
-        <input type="email" id="email" name="email" required />
-      </div>
-      <div class="form-group">
-        <label for="date">Date *</label>
-        <input type="date" id="date" name="date" required />
-      </div>
-      <div class="form-group">
-        <label>Signature *</label>
-        <canvas id="signatureCanvas" class="signature-pad"></canvas>
-        <div class="button-group">
-          <button type="button" class="clear-btn" onclick="clearSignature()">Clear</button>
-        </div>
-      </div>
-      <div class="button-group" style="justify-content: flex-end;">
-        <button type="submit" class="submit-btn">Submit</button>
-      </div>
-    </form>
+  <div class="container">
+    <h2>Invoice Generator</h2>
+    <p id="loading">Loading vendor & contract data...</p>
+
+    <div class="section">
+      <label for="vendor">Vendor:</label>
+      <select id="vendor"></select>
+
+      <label for="contract">Contract:</label>
+      <select id="contract"></select>
+
+      <label for="invoiceDate">Invoice Date:</label>
+      <input type="date" id="invoiceDate">
+
+      <label for="submittedBy">Submitted By:</label>
+      <input type="text" id="submittedBy">
+    </div>
+
+    <div class="section line-items">
+      <label>Line Items:</label>
+      <table id="lineItemTable">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Qty</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <button class="btn" type="button" onclick="addRow()">Add Line Item</button>
+    </div>
+
+    <div class="section">
+      <label for="totalLabor">Total Labor Amount:</label>
+      <input type="number" id="totalLabor" readonly>
+
+      <label for="totalExpense">Total Expense Amount:</label>
+      <input type="number" id="totalExpense" readonly>
+
+      <label for="invoiceTotal">Invoice Total:</label>
+      <input type="number" id="invoiceTotal" readonly>
+
+      <label>Supplemental Attachments:</label>
+      <input type="file" id="supplemental" multiple>
+    </div>
+
+    <button class="btn" type="button" onclick="submitForm()">Submit Invoice</button>
+    <p id="successMsg">✅ Invoice submitted successfully!</p>
   </div>
 
   <script>
-    const canvas = document.getElementById('signatureCanvas');
-    const signaturePad = new SignaturePad(canvas);
-
-    function clearSignature() {
-      signaturePad.clear();
-    }
-
-    function isSignatureEmpty() {
-      return signaturePad.isEmpty();
-    }
-
-    document.getElementById('signatureForm').addEventListener('submit', async function (e) {
-      e.preventDefault();
-      if (isSignatureEmpty()) {
-        alert('Please provide a signature.');
-        return;
-      }
-
-      const ipResponse = await fetch('https://api.ipify.org?format=json');
-      const ipData = await ipResponse.json();
-
-      const payload = {
-        contractType: document.getElementById('contractType').value,
-        customerName: document.getElementById('customerName').value.trim(),
-        contactName: document.getElementById('contactName').value.trim(),
-        title: document.getElementById('title').value.trim(),
-        email: document.getElementById('email').value.trim(),
-        date: document.getElementById('date').value,
-        signature: signaturePad.toDataURL(),
-        timestamp: new Date().toISOString(),
-        ipAddress: ipData.ip
-      };
-
+    async function loadForm() {
+      const loadingMsg = document.getElementById("loading");
       try {
-        const res = await fetch('https://42b858c747f4e3019eb6a3527fd871.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/74bef536430e413c953d8e7bbe6108d0/triggers/manual/paths/invoke/?api-version=1&tenantId=tId&environmentName=42b858c7-47f4-e301-9eb6-a3527fd87158&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sPr1wWfQkacjh8Wo9m1_7GJbMt9iCIvCXHgowvwueck', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+        loadingMsg.innerText = "Loading vendor & contract details...";
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const res = await fetch("https://42b858c747f4e3019eb6a3527fd871.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/74bef536430e413c953d8e7bbe6108d0/triggers/manual/paths/invoke/?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sPr1wWfQkacjh8Wo9m1_7GJbMt9iCIvCXHgowvwueck");
+        const data = await res.json();
+
+        const vendorDropdown = document.getElementById("vendor");
+        vendorDropdown.innerHTML = "";
+        data.vendors.forEach(v => {
+          const opt = document.createElement("option");
+          opt.value = v.title;
+          opt.text = v.title;
+          vendorDropdown.appendChild(opt);
         });
 
-        if (res.ok) {
-          alert('Form submitted successfully!');
-          this.reset();
-          clearSignature();
-        } else {
-          alert('Submission failed.');
-        }
+        const contractDropdown = document.getElementById("contract");
+        contractDropdown.innerHTML = "";
+        data.contracts.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.title;
+          opt.text = c.title;
+          contractDropdown.appendChild(opt);
+        });
+
+        loadingMsg.style.display = "none";
       } catch (err) {
-        console.error(err);
-        alert('An error occurred.');
+        loadingMsg.innerText = "Failed to load data.";
       }
-    });
+    }
+
+    function addRow() {
+      const tbody = document.getElementById("lineItemTable").querySelector("tbody");
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td>
+          <select class="type" onchange="updateTotals()">
+            <option value="Labor">Labor</option>
+            <option value="Expense">Expense</option>
+          </select>
+        </td>
+        <td><input type="text" class="desc" placeholder="Description" /></td>
+        <td><input type="number" class="qty" placeholder="Qty" onchange="updateTotals()" /></td>
+        <td><input type="number" class="unit" placeholder="Unit Price" onchange="updateTotals()" /></td>
+        <td class="rowTotal">0.00</td>
+      `;
+      tbody.appendChild(row);
+    }
+
+    function updateTotals() {
+      let labor = 0;
+      let expense = 0;
+
+      document.querySelectorAll("#lineItemTable tbody tr").forEach(row => {
+        const type = row.querySelector(".type").value;
+        const qty = parseFloat(row.querySelector(".qty").value || 0);
+        const unit = parseFloat(row.querySelector(".unit").value || 0);
+        const rowTotal = qty * unit;
+
+        row.querySelector(".rowTotal").innerText = rowTotal.toFixed(2);
+
+        if (type === "Labor") labor += rowTotal;
+        else if (type === "Expense") expense += rowTotal;
+      });
+
+      document.getElementById("totalLabor").value = labor.toFixed(2);
+      document.getElementById("totalExpense").value = expense.toFixed(2);
+      document.getElementById("invoiceTotal").value = (labor + expense).toFixed(2);
+    }
+
+    function generateInvoiceId() {
+      const now = new Date();
+      const year = now.getFullYear().toString().slice(-2);
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const rand = Math.floor(Math.random() * 9000) + 1000;
+      return `HAPSINV-${year}-${month}-AB-${rand}`;
+    }
+
+    async function submitForm() {
+      document.getElementById("successMsg").style.display = "none";
+
+      const attachments = [...document.getElementById("supplemental").files];
+      const attachmentData = await Promise.all(
+        attachments.map(file => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result.split(',')[1];
+              resolve({
+                name: file.name,
+                contentBytes: base64
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+        })
+      );
+
+      let lineItemsHTML = "<table border='1' style='border-collapse:collapse;width:100%'><tr><th>Type</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr>";
+      document.querySelectorAll("#lineItemTable tbody tr").forEach(row => {
+        const type = row.querySelector(".type").value;
+        const desc = row.querySelector(".desc").value;
+        const qty = row.querySelector(".qty").value;
+        const unit = row.querySelector(".unit").value;
+        const total = row.querySelector(".rowTotal").innerText;
+        lineItemsHTML += `<tr><td>${type}</td><td>${desc}</td><td>${qty}</td><td>${unit}</td><td>${total}</td></tr>`;
+      });
+      lineItemsHTML += "</table>";
+
+      const body = {
+        invoiceId: generateInvoiceId(),
+        vendor: document.getElementById("vendor").value,
+        contract: document.getElementById("contract").value,
+        invoiceDate: document.getElementById("invoiceDate").value,
+        totalLabor: parseFloat(document.getElementById("totalLabor").value),
+        totalExpense: parseFloat(document.getElementById("totalExpense").value),
+        invoiceTotal: parseFloat(document.getElementById("invoiceTotal").value),
+        submittedBy: document.getElementById("submittedBy").value,
+        itemDetails: lineItemsHTML,
+        attachments: attachmentData
+      };
+
+      const res = await fetch("https://42b858c747f4e3019eb6a3527fd871.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b7aaa3ae05434e909c4f4ff491a06383/triggers/manual/paths/invoke/?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=GLkB21PfHadObFcv6YMM9-NekTNpMbFT1PArzPGJ93E", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) {
+        document.getElementById("successMsg").style.display = "block";
+        resetForm();
+      } else {
+        alert("Submission failed. Please try again.");
+      }
+    }
+
+    function resetForm() {
+      document.getElementById("invoiceDate").value = "";
+      document.getElementById("submittedBy").value = "";
+      document.getElementById("totalLabor").value = "";
+      document.getElementById("totalExpense").value = "";
+      document.getElementById("invoiceTotal").value = "";
+      document.getElementById("supplemental").value = "";
+      document.getElementById("lineItemTable").querySelector("tbody").innerHTML = "";
+      document.getElementById("vendor").selectedIndex = 0;
+      document.getElementById("contract").selectedIndex = 0;
+    }
+
+    window.onload = loadForm;
   </script>
 </body>
 </html>
